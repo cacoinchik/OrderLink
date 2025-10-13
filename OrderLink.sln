@@ -13,6 +13,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shop.Web", "src\WebApps\Sho
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Shop.Web.Client", "src\WebApps\Shop.Web\Shop.Web.Client\Shop.Web.Client.csproj", "{73D5BBA2-C2B9-4380-9BCB-8C21F8615DA4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orders.Domain", "src\Services\Orders\Orders.Domain\Orders.Domain.csproj", "{5B3648E1-2486-72CB-3525-0B281A8583A8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Orders.Infrastructure", "src\Services\Orders\Orders.Infrastructure\Orders.Infrastructure.csproj", "{773B1837-A87B-64C0-7BF0-F56BF39AC9C5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +43,14 @@ Global
 		{73D5BBA2-C2B9-4380-9BCB-8C21F8615DA4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{73D5BBA2-C2B9-4380-9BCB-8C21F8615DA4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{73D5BBA2-C2B9-4380-9BCB-8C21F8615DA4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5B3648E1-2486-72CB-3525-0B281A8583A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5B3648E1-2486-72CB-3525-0B281A8583A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5B3648E1-2486-72CB-3525-0B281A8583A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5B3648E1-2486-72CB-3525-0B281A8583A8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{773B1837-A87B-64C0-7BF0-F56BF39AC9C5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{773B1837-A87B-64C0-7BF0-F56BF39AC9C5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{773B1837-A87B-64C0-7BF0-F56BF39AC9C5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{773B1837-A87B-64C0-7BF0-F56BF39AC9C5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
