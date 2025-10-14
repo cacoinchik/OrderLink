@@ -1,6 +1,4 @@
-﻿using Orders.Domain.Entities;
-
-namespace Orders.API.DTOs
+﻿namespace Orders.API.DTOs
 {
     public class OrderDto
     {

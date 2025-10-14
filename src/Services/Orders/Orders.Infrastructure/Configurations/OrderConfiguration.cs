@@ -22,13 +22,13 @@ namespace Orders.Infrastructure.Configurations
 
             builder.Property(o => o.Currency).IsRequired().HasMaxLength(3);
 
-            builder.Property(o => o.CreateTime).IsRequired();
+            builder.Property(o => o.TimeCreate).IsRequired();
 
-            builder.Property(o => o.UpdateTime);
+            builder.Property(o => o.TimeUpdate);
 
             builder.Property(o => o.ShippingCountry).IsRequired().HasMaxLength(100);
 
-            builder.Property(o => o.ShippinPostalCode).IsRequired().HasMaxLength(20);
+            builder.Property(o => o.ShippingPostalCode).IsRequired().HasMaxLength(20);
 
             builder.Property(o => o.ShippingCity).IsRequired().HasMaxLength(100);
 

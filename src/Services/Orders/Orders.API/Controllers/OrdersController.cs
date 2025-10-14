@@ -70,9 +70,9 @@ namespace Orders.API.Controllers
                 Status = order.Status.ToString(),
                 TotalAmount = order.TotalAmount,
                 Currency = order.Currency,
-                TimeCreate = order.CreateTime,
+                TimeCreate = order.TimeCreate,
                 Country = order.ShippingCountry,
-                PostalCode = order.ShippinPostalCode,
+                PostalCode = order.ShippingPostalCode,
                 City = order.ShippingCity,
                 AddressLine = order.ShippingAddress,
                 Items = order.Items.Select(item => new OrderItemDto

@@ -1,6 +1,4 @@
-﻿using System.Runtime.InteropServices;
-
-namespace Orders.Domain.Events
+﻿namespace Orders.Domain.Events
 {
     public class OrderCreated
     {
