@@ -39,5 +39,73 @@ namespace Orders.Domain.Entities
             ShippingCity = city;
             ShippingAddress = address;
         }
+
+        //Методы для смены статуса заказа
+        //TODO метод для русифицирования статусов :)
+        public void SetReserved()
+        {
+            if (Status is not OrderStatus.New)
+                throw new InvalidOperationException($"Невозможно сменить статус с '{Status}' на 'Резерв'");
+
+            Status = OrderStatus.Reserved;
+            TimeUpdate = DateTime.UtcNow;
+        }
+
+        public void SetPaymentPending()
+        {
+            if (Status is not OrderStatus.Reserved)
+                throw new InvalidOperationException($"Невозможно сменить статус с {Status} на 'Отправка платежа'");
+
+            Status = OrderStatus.PaymentPending;
+            TimeUpdate = DateTime.UtcNow;
+        }
+
+        public void SetPaid()
+        {
+            if (Status is not OrderStatus.PaymentPending)
+                throw new InvalidOperationException($"Невозможно сменить статус с {Status} на 'Оплачено'");
+
+            Status = OrderStatus.Paid;
+            TimeUpdate = DateTime.UtcNow;
+        }
+
+        public void SetCompleted()
+        {
+            if (Status is not OrderStatus.Paid)
+                throw new InvalidOperationException($"Невозможно сменить статус с {Status} на 'Завершен'");
+
+            Status = OrderStatus.Completed;
+            TimeUpdate = DateTime.UtcNow;
+        }
+
+        public void CancelOrder()
+        {
+            if (Status is OrderStatus.Completed)
+                throw new InvalidOperationException("Невозможно отменить завершенный заказ'");
+
+            if (Status is OrderStatus.Cancelled)
+                throw new InvalidOperationException("Данный заказ уже отменен");
+
+            Status = OrderStatus.Cancelled;
+            TimeUpdate = DateTime.UtcNow;
+        }
+
+        public void SetFailed()
+        {
+            if (Status is OrderStatus.Cancelled || Status is OrderStatus.Completed)
+                throw new InvalidOperationException($"Невозможно сменить статус с {Status} на 'Платёж не прошел'");
+
+            Status = OrderStatus.Failed;
+            TimeUpdate = DateTime.UtcNow;
+        }
+
+        public void SetExpired()
+        {
+            if (Status is OrderStatus.Cancelled || Status is OrderStatus.Completed)
+                throw new InvalidOperationException($"Невозможно сменить статус с {Status} на 'Истекший");
+
+            Status = OrderStatus.Expired;
+            TimeUpdate = DateTime.UtcNow;
+        }
     }
 }
