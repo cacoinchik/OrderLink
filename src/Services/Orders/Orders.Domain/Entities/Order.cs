@@ -21,8 +21,7 @@ namespace Orders.Domain.Entities
 
         //Детали заказа
         private readonly List<OrderItem> orderItems = new();
-        public IReadOnlyCollection<OrderItem> Items => orderItems.AsReadOnly();
-
+        public IReadOnlyCollection<OrderItem> Items => orderItems;
 
         private Order() { }
 
