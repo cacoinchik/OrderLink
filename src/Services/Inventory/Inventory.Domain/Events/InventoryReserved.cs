@@ -1,6 +1,6 @@
 ﻿namespace Inventory.Domain.Events
 {
-    public class InvenotryReserved
+    public class InventoryReserved
     {
         public Guid ReservationId { get; set; }
         public Guid OrderId { get; set; }

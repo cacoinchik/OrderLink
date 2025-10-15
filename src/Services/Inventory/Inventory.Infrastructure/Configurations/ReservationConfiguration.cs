@@ -11,7 +11,7 @@ namespace Inventory.Infrastructure.Configurations
         {
             builder.ToTable("Reservations");
 
-            builder.HasIndex(r => r.Id);
+            builder.HasKey(r => r.Id);
 
             builder.Property(r => r.Id).IsRequired().ValueGeneratedNever();
 

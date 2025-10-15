@@ -28,8 +28,8 @@ namespace Inventory.Domain.Entities
             Sku = sku;
             Count = count;
             Status = ReservationStatus.Reserved;
-            TimeCreate = DateTime.Now;
-            TimeExpired = DateTime.Now.AddMinutes(ttlMinutes);
+            TimeCreate = DateTime.UtcNow;
+            TimeExpired = DateTime.UtcNow.AddMinutes(ttlMinutes);
         }
 
         //TODO статусы на русском языке
@@ -37,6 +37,9 @@ namespace Inventory.Domain.Entities
         {
             if (Status != ReservationStatus.Reserved)
                 throw new InvalidOperationException($"Невозможно подтвердить резерв в статусе {Status}");
+
+            Status = ReservationStatus.Commited;
+            TimeCommited = DateTime.UtcNow;
         }
 
         public void Release()

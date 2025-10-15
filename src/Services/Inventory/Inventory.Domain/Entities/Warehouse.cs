@@ -19,6 +19,7 @@
             Region = region;
             City = city;
             Address = address;
+            IsActive = true;
             TimeCreate = DateTime.UtcNow;
         }
 
