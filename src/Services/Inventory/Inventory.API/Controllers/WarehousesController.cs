@@ -8,10 +8,10 @@ namespace Inventory.API.Controllers
 {
     [ApiController]
     [Route("api/v1/[controller]")]
-    public class WarehouseController : ControllerBase
+    public class WarehousesController : ControllerBase
     {
         private readonly InventoryDbContext _context;
-        public WarehouseController(InventoryDbContext context)
+        public WarehousesController(InventoryDbContext context)
         {
             _context = context;
         }

@@ -6,7 +6,7 @@
         public Guid WarehouseId { get; set; }
         public string Sku { get; set; }
         public int AvailableQuantity { get; set; }
-        public int ReserverdQuantity { get; set; }
+        public int ReservedQuantity { get; set; }
         public int TotalQuantity { get; set; }
         public DateTime TimeUpdate { get; set; }
     }

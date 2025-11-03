@@ -11,7 +11,7 @@
         public string Status { get; set; }
         public DateTime TimeCreate { get; set; }
         public DateTime TimeExpired { get; set; }
-        public DateTime? TimeCommited { get; set; }
+        public DateTime? TimeCommitted { get; set; }
         public DateTime? TimeReleased { get; set; }
     }
 

@@ -13,7 +13,7 @@ namespace Inventory.Domain.Entities
         public ReservationStatus Status { get; private set; }
         public DateTime TimeCreate { get; private set; }
         public DateTime TimeExpired { get; private set; }
-        public DateTime? TimeCommited { get; private set; }
+        public DateTime? TimeCommitted { get; private set; }
         public DateTime? TimeReleased { get; private set; }
 
         private Reservation() { }
@@ -38,13 +38,13 @@ namespace Inventory.Domain.Entities
             if (Status != ReservationStatus.Reserved)
                 throw new InvalidOperationException($"Невозможно подтвердить резерв в статусе {Status}");
 
-            Status = ReservationStatus.Commited;
-            TimeCommited = DateTime.UtcNow;
+            Status = ReservationStatus.Committed;
+            TimeCommitted = DateTime.UtcNow;
         }
 
         public void Release()
         {
-            if (Status == ReservationStatus.Commited)
+            if (Status == ReservationStatus.Committed)
                 throw new InvalidOperationException("Невозможно снять подтвержденный резерв");
 
             if (Status == ReservationStatus.Released)

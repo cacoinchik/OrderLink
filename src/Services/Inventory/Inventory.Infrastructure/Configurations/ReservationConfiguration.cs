@@ -31,7 +31,7 @@ namespace Inventory.Infrastructure.Configurations
 
             builder.Property(r => r.TimeExpired).IsRequired();
 
-            builder.Property(r => r.TimeCommited);
+            builder.Property(r => r.TimeCommitted);
 
             builder.Property(r => r.TimeReleased);
 

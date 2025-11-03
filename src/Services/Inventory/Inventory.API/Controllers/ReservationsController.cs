@@ -8,11 +8,11 @@ namespace Inventory.API.Controllers
 {
     [ApiController]
     [Route("api/v1/[controller]")]
-    public class ReservationController : ControllerBase
+    public class ReservationsController : ControllerBase
     {
         private readonly InventoryDbContext _context;
 
-        public ReservationController(InventoryDbContext context)
+        public ReservationsController(InventoryDbContext context)
         {
             _context = context;
         }
@@ -35,7 +35,7 @@ namespace Inventory.API.Controllers
                 .FirstOrDefaultAsync(s => s.WarehouseId == request.WarehouseId && s.Sku == request.Sku);
 
             if (stock is null)
-                return BadRequest("Остаток по данному товару не найден на скалде");
+                return NotFound("Остаток по данному товару не найден на складе");
 
             stock.Reserve(request.Count);
 
@@ -64,12 +64,12 @@ namespace Inventory.API.Controllers
             var reservation = await _context.Reservations.FindAsync(id);
 
             if (reservation is null)
-                return BadRequest("Резерв не найден");
+                return NotFound("Резерв не найден");
 
             var stock = await _context.Stocks.FindAsync(reservation.StockId);
 
             if (stock is null)
-                return BadRequest("Остатки товара не найдены");
+                return NotFound("Остатки товара не найдены");
 
             reservation.Commit();
             stock.Commit(reservation.Count);
@@ -85,12 +85,12 @@ namespace Inventory.API.Controllers
             var reservation = await _context.Reservations.FindAsync(id);
 
             if (reservation is null)
-                return BadRequest("Резерв не найден");
+                return NotFound("Резерв не найден");
 
             var stock = await _context.Stocks.FindAsync(reservation.StockId);
 
             if (stock is null)
-                return BadRequest("Остатки товара не найдены");
+                return NotFound("Остатки товара не найдены");
 
             reservation.Release();
             stock.Release(reservation.Count);
@@ -114,7 +114,7 @@ namespace Inventory.API.Controllers
                 Status = reservation.Status.ToString(),
                 TimeCreate = reservation.TimeCreate,
                 TimeExpired = reservation.TimeExpired,
-                TimeCommited = reservation.TimeCommited,
+                TimeCommitted = reservation.TimeCommitted,
                 TimeReleased = reservation.TimeReleased
             };
         }

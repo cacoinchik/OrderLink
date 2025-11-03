@@ -4,7 +4,7 @@
     {
         Pending = 0,
         Reserved = 1,
-        Commited = 2,
+        Committed = 2,
         Released = 3,
         Expired = 4
     }

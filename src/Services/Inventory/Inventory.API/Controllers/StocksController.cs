@@ -80,7 +80,7 @@ namespace Inventory.API.Controllers
                 WarehouseId = stock.WarehouseId,
                 Sku = stock.Sku,
                 AvailableQuantity = stock.AvailableQuantity,
-                ReserverdQuantity = stock.ReservedQuantity,
+                ReservedQuantity = stock.ReservedQuantity,
                 TotalQuantity = stock.TotalQuantity,
                 TimeUpdate = stock.TimeUpdate,
             };
