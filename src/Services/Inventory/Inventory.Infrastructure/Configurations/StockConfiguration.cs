@@ -27,6 +27,8 @@ namespace Inventory.Infrastructure.Configurations
 
             builder.Property(s => s.TimeUpdate).IsRequired();
 
+            builder.Property(s => s.RowVersion).IsRowVersion().IsConcurrencyToken();
+
             builder.HasOne<Warehouse>()
                 .WithMany()
                 .HasForeignKey(s => s.WarehouseId)

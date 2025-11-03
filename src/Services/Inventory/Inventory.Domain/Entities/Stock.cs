@@ -9,6 +9,7 @@
         public int ReservedQuantity { get; private set; }
         public int TotalQuantity { get; private set; }
         public DateTime TimeUpdate { get; private set; }
+        public byte[] RowVersion { get; private set; }
 
         private Stock() { }
 
@@ -65,6 +66,9 @@
         public void ManageQuantity(int quantity)
         {
             var newTotal = TotalQuantity + quantity;
+
+            if (newTotal <= 0)
+                throw new InvalidOperationException("Итоговое количество не может быть отрицательным");
             if (newTotal < ReservedQuantity)
                 throw new InvalidOperationException("Остаток ниже зарезервированного количества");
 

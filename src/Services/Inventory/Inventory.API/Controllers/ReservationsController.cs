@@ -1,5 +1,6 @@
 ﻿using Inventory.API.DTOs;
 using Inventory.Domain.Entities;
+using Inventory.Domain.Enums;
 using Inventory.Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,15 +13,15 @@ namespace Inventory.API.Controllers
     {
         private readonly InventoryDbContext _context;
 
-        public ReservationsController(InventoryDbContext context)
+        public ReservationsController(InventoryDbContext context, ILogger logger)
         {
             _context = context;
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetReservationById(Guid id)
+        public async Task<IActionResult> GetReservationById(Guid id, CancellationToken cancellationToken = default)
         {
-            var reservation = await _context.Reservations.FindAsync(id);
+            var reservation = await _context.Reservations.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
 
             if (reservation is null)
                 return NotFound("Резерв не найден");
@@ -29,75 +30,111 @@ namespace Inventory.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateReservation(CreateReservationRequest request)
+        public async Task<IActionResult> CreateReservation(CreateReservationRequest request, CancellationToken cancellationToken = default)
         {
-            var stock = await _context.Stocks
-                .FirstOrDefaultAsync(s => s.WarehouseId == request.WarehouseId && s.Sku == request.Sku);
+            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
 
-            if (stock is null)
-                return NotFound("Остаток по данному товару не найден на складе");
+            try
+            {
+                var stock = await _context.Stocks
+                .FirstOrDefaultAsync(
+                    s => s.WarehouseId == request.WarehouseId && s.Sku == request.Sku, cancellationToken);
 
-            stock.Reserve(request.Count);
+                if (stock is null)
+                    return NotFound("Остаток по данному товару не найден на складе");
 
-            var reservation = new Reservation(
-                orderId: request.OrderId,
-                stockId: stock.Id,
-                warehouseId: request.WarehouseId,
-                sku: request.Sku,
-                count: request.Count,
-                ttlMinutes: request.TtlMinutes
-            );
+                stock.Reserve(request.Count);
 
-            await _context.Reservations.AddAsync(reservation);
-            await _context.SaveChangesAsync();
+                var reservation = new Reservation(
+                    orderId: request.OrderId,
+                    stockId: stock.Id,
+                    warehouseId: request.WarehouseId,
+                    sku: request.Sku,
+                    count: request.Count,
+                    ttlMinutes: request.TtlMinutes
+                );
 
-            return CreatedAtAction(
-                actionName: nameof(GetReservationById),
-                routeValues: new { id = reservation.Id },
-                value: MapToDto(reservation)
-            );
+                await _context.Reservations.AddAsync(reservation, cancellationToken);
+                await _context.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+
+                return CreatedAtAction(
+                    actionName: nameof(GetReservationById),
+                    routeValues: new { id = reservation.Id },
+                    value: MapToDto(reservation)
+                );
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPost("{id}/commit")]
-        public async Task<IActionResult> CommitReservation(Guid id)
+        public async Task<IActionResult> CommitReservation(Guid id, CancellationToken cancellationToken = default)
         {
-            var reservation = await _context.Reservations.FindAsync(id);
+            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
 
-            if (reservation is null)
-                return NotFound("Резерв не найден");
+            try
+            {
+                var reservation = await _context.Reservations.FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
 
-            var stock = await _context.Stocks.FindAsync(reservation.StockId);
+                if (reservation is null)
+                    return NotFound("Резерв не найден");
 
-            if (stock is null)
-                return NotFound("Остатки товара не найдены");
+                if (reservation.Status == ReservationStatus.Committed)
+                    return Ok(new { message = "Резерв уже подтвержден" });
 
-            reservation.Commit();
-            stock.Commit(reservation.Count);
+                var stock = await _context.Stocks.FirstOrDefaultAsync(s => s.Id == reservation.StockId, cancellationToken);
 
-            await _context.SaveChangesAsync();
+                if (stock is null)
+                    return NotFound("Остатки товара не найдены");
 
-            return Ok();
+                reservation.Commit();
+                stock.Commit(reservation.Count);
+
+                await _context.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+
+                return Ok(new { message = "Резерв успешно подтвержден" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [HttpPost("{id}/release")]
-        public async Task<IActionResult> ReleaseReservation(Guid id)
+        public async Task<IActionResult> ReleaseReservation(Guid id, CancellationToken cancellationToken = default)
         {
-            var reservation = await _context.Reservations.FindAsync(id);
+            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                var reservation = await _context.Reservations.FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
 
-            if (reservation is null)
-                return NotFound("Резерв не найден");
+                if (reservation is null)
+                    return NotFound("Резерв не найден");
 
-            var stock = await _context.Stocks.FindAsync(reservation.StockId);
+                if (reservation.Status == ReservationStatus.Released)
+                    return Ok("Резерв уже освобожден");
 
-            if (stock is null)
-                return NotFound("Остатки товара не найдены");
+                var stock = await _context.Stocks.FirstOrDefaultAsync(s => s.Id == reservation.StockId, cancellationToken);
 
-            reservation.Release();
-            stock.Release(reservation.Count);
+                if (stock is null)
+                    return NotFound("Остатки товара не найдены");
 
-            await _context.SaveChangesAsync();
+                reservation.Release();
+                stock.Release(reservation.Count);
 
-            return Ok();
+                await _context.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+
+                return Ok(new { message = "Резерв уже освобожден" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
 

@@ -18,9 +18,9 @@ namespace Inventory.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetStocks(string? sku = null, Guid? warehouseId = null)
+        public async Task<IActionResult> GetStocks(string? sku = null, Guid? warehouseId = null, CancellationToken cancellationToken = default)
         {
-            var stocks = _context.Stocks.AsQueryable();
+            var stocks = _context.Stocks.AsNoTracking().AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(sku))
                 stocks = stocks.Where(s => s.Sku == sku);
@@ -28,17 +28,17 @@ namespace Inventory.API.Controllers
             if (warehouseId.HasValue)
                 stocks = stocks.Where(s => s.WarehouseId == warehouseId);
 
-            var sortStocks = await stocks.OrderByDescending(s => s.Sku).ThenBy(s => s.WarehouseId).ToListAsync();
+            var sortedStocks = await stocks.OrderByDescending(s => s.Sku).ThenBy(s => s.WarehouseId).ToListAsync(cancellationToken);
 
-            var result = stocks.Select(MapToDto).ToList();
+            var result = sortedStocks.Select(MapToDto).ToList();
 
             return Ok(result);
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetStockById(Guid id)
+        public async Task<IActionResult> GetStockById(Guid id, CancellationToken cancellationToken = default)
         {
-            var stock = await _context.Stocks.FindAsync(id);
+            var stock = await _context.Stocks.AsNoTracking().FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
 
             if (stock is null)
                 return NotFound("Остатки данного товара не найдены");
@@ -50,7 +50,7 @@ namespace Inventory.API.Controllers
         public async Task<IActionResult> ManageStock(ManageStockQuantityRequest request)
         {
             var stock = await _context.Stocks
-                .FirstOrDefaultAsync(s => s.WarehouseId ==  request.WarehouseId && s.Sku == request.Sku);
+                .FirstOrDefaultAsync(s => s.WarehouseId == request.WarehouseId && s.Sku == request.Sku);
 
             if (stock is null)
             {
