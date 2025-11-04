@@ -1,0 +1,283 @@
+# ==============================================
+# ORDERLINK - DOCKER COMPOSE
+# Полная инфраструктура для разработки
+# ==============================================
+
+# ============================================
+# VOLUMES - Для сохранения данных между запусками
+# ============================================
+volumes:
+  postgres_orders_data:      # БД заказов
+    driver: local
+  postgres_inventory_data:   # БД складов
+    driver: local
+  redis_data:                # Кэш Redis
+    driver: local
+  kafka_data:                # Данные Kafka
+    driver: local
+  zookeeper_data:            # Данные Zookeeper
+    driver: local
+
+# ============================================
+# NETWORKS - Изолированная сеть для сервисов
+# ============================================
+networks:
+  orderlink-network:
+    driver: bridge
+
+# ============================================
+# SERVICES
+# ============================================
+services:
+  
+  # ------------------------------------------
+  # PostgreSQL для Orders
+  # ------------------------------------------
+  postgres-orders:
+    image: postgres:15-alpine
+    container_name: orderlink-postgres-orders
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: jhlthpass
+      POSTGRES_DB: OrdersDb
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"  # Порт для внешнего доступа
+    volumes:
+      - postgres_orders_data:/var/lib/postgresql/data
+    networks:
+      - orderlink-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d OrdersDb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ------------------------------------------
+  # PostgreSQL для Inventory
+  # ------------------------------------------
+  postgres-inventory:
+    image: postgres:15-alpine
+    container_name: orderlink-postgres-inventory
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: jhlthpass
+      POSTGRES_DB: InventoryDb
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5433:5432"  # Другой порт для избежания конфликтов
+    volumes:
+      - postgres_inventory_data:/var/lib/postgresql/data
+    networks:
+      - orderlink-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d InventoryDb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # ------------------------------------------
+  # Redis - Кэш и сессии
+  # ------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: orderlink-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass redispass
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - orderlink-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ------------------------------------------
+  # Zookeeper - для Kafka
+  # ------------------------------------------
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: orderlink-zookeeper
+    restart: unless-stopped
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper_data:/var/lib/zookeeper/data
+    networks:
+      - orderlink-network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ------------------------------------------
+  # Kafka - Message Broker
+  # ------------------------------------------
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: orderlink-kafka
+    restart: unless-stopped
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"   # External
+      - "9093:9093"   # Internal
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      
+      # Listeners для внешнего и внутреннего доступа
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9093,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9093,PLAINTEXT_HOST://0.0.0.0:9092
+      
+      # Настройки для разработки
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_LOG_RETENTION_HOURS: 168  # 7 дней
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - orderlink-network
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server", "localhost:9093"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # ------------------------------------------
+  # Kafka UI - для мониторинга (опционально)
+  # ------------------------------------------
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: orderlink-kafka-ui
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: orderlink-local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9093
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    networks:
+      - orderlink-network
+
+  # ------------------------------------------
+  # Orders.API
+  # ------------------------------------------
+  orders-api:
+    build:
+      context: .
+      dockerfile: src/Services/Orders/Orders.API/Dockerfile
+    container_name: orderlink-orders-api
+    restart: unless-stopped
+    depends_on:
+      postgres-orders:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "5267:8080"
+    environment:
+      # Подключение к БД
+      ConnectionStrings__OrdersDatabase: "Host=postgres-orders;Port=5432;Database=OrdersDb;Username=postgres;Password=jhlthpass"
+      
+      # Kafka
+      Kafka__BootstrapServers: "kafka:9093"
+      Kafka__GroupId: "orders-api-group"
+      
+      # Redis
+      Redis__ConnectionString: "redis:6379,password=redispass"
+      
+      # ASP.NET настройки
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      
+      # Логирование
+      Logging__LogLevel__Default: Information
+      Logging__LogLevel__Microsoft.AspNetCore: Warning
+    networks:
+      - orderlink-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ------------------------------------------
+  # Inventory.API
+  # ------------------------------------------
+  inventory-api:
+    build:
+      context: .
+      dockerfile: src/Services/Inventory/Inventory.API/Dockerfile
+    container_name: orderlink-inventory-api
+    restart: unless-stopped
+    depends_on:
+      postgres-inventory:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "5258:8080"
+    environment:
+      # Подключение к БД
+      ConnectionStrings__InventoryDatabase: "Host=postgres-inventory;Port=5432;Database=InventoryDb;Username=postgres;Password=jhlthpass"
+      
+      # Kafka
+      Kafka__BootstrapServers: "kafka:9093"
+      Kafka__GroupId: "inventory-api-group"
+      
+      # Redis
+      Redis__ConnectionString: "redis:6379,password=redispass"
+      
+      # ASP.NET настройки
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      
+      # Логирование
+      Logging__LogLevel__Default: Information
+      Logging__LogLevel__Microsoft.AspNetCore: Warning
+    networks:
+      - orderlink-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# ============================================
+# ОПИСАНИЕ ПОРТОВ
+# ============================================
+# PostgreSQL Orders:    5432
+# PostgreSQL Inventory: 5433
+# Redis:                6379
+# Zookeeper:           2181
+# Kafka:               9092 (external), 9093 (internal)
+# Kafka UI:            8080
+# Orders API:          5267
+# Inventory API:       5258
