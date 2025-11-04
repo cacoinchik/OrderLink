@@ -17,13 +17,13 @@ namespace Orders.API.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetOrderById(Guid id)
+        public async Task<IActionResult> GetOrderById(Guid id, CancellationToken cancellationToken = default)
         {
             var order = await _context.Orders.Include(o => o.Items)
-            .FirstOrDefaultAsync(o => o.Id == id);
+            .FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
 
             if (order is null)
-                return NotFound("Данный заказ не найден");
+                return NotFound(new { message = "Данный заказ не найден" });
 
             var result = MapToDto(order);
 
@@ -31,34 +31,41 @@ namespace Orders.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateOrderRequest(CreateOrderRequest request)
+        public async Task<IActionResult> CreateOrderRequest(CreateOrderRequest request, CancellationToken cancellationToken = default)
         {
-            var orderItems = request.Items.Select(item => new OrderItem(
+            try
+            {
+                var orderItems = request.Items.Select(item => new OrderItem(
                 sku: item.Sku,
                 count: item.Count,
                 price: item.Price,
                 currency: item.Currency
             )).ToList();
 
-            var order = new Order(
-                customerId: request.CustomerId,
-                items: orderItems,
-                country: request.ShippingAddress.Country,
-                postalCode: request.ShippingAddress.PostalCode,
-                city: request.ShippingAddress.City,
-                address: request.ShippingAddress.AddressLine
-            );
+                var order = new Order(
+                    customerId: request.CustomerId,
+                    items: orderItems,
+                    country: request.ShippingAddress.Country,
+                    postalCode: request.ShippingAddress.PostalCode,
+                    city: request.ShippingAddress.City,
+                    address: request.ShippingAddress.AddressLine
+                );
 
-            await _context.Orders.AddAsync(order);
-            await _context.SaveChangesAsync();
+                await _context.Orders.AddAsync(order, cancellationToken);
+                await _context.SaveChangesAsync(cancellationToken);
 
-            var result = MapToDto(order);
+                var result = MapToDto(order);
 
-            return CreatedAtAction(
-                actionName: nameof(GetOrderById),
-                routeValues: new { id = order.Id },
-                value: result
-            );
+                return CreatedAtAction(
+                    actionName: nameof(GetOrderById),
+                    routeValues: new { id = order.Id },
+                    value: result
+                );
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { errorMessage = ex.Message });
+            }
         }
 
         private OrderDto MapToDto(Order order)
