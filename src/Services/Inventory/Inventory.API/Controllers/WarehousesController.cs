@@ -17,14 +17,14 @@ namespace Inventory.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetWarehouses(bool? isActive)
+        public async Task<IActionResult> GetWarehouses(bool? isActive, CancellationToken cancellationToken = default)
         {
-            var warehouses = _context.Warehouses.AsQueryable();
+            var warehouses = _context.Warehouses.AsNoTracking().AsQueryable();
 
             if (isActive.HasValue)
                 warehouses = warehouses.Where(w => w.IsActive == isActive);
 
-            var sortWarehouses = await warehouses.OrderBy(w => w.Name).ToListAsync();
+            var sortWarehouses = await warehouses.OrderBy(w => w.Name).ToListAsync(cancellationToken);
 
             var result = sortWarehouses.Select(MapToDto).ToList();
 
@@ -32,9 +32,9 @@ namespace Inventory.API.Controllers
         }
 
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetWarehouseById(Guid id)
+        public async Task<IActionResult> GetWarehouseById(Guid id, CancellationToken cancellationToken = default)
         {
-            var warehouse = await _context.Warehouses.FindAsync(id);
+            var warehouse = await _context.Warehouses.AsNoTracking().FirstOrDefaultAsync(w => w.Id == id, cancellationToken);
 
             if (warehouse is null)
                 return NotFound("Склад не найден");
@@ -43,7 +43,7 @@ namespace Inventory.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateWarehouse(CreateWarehouseRequest request)
+        public async Task<IActionResult> CreateWarehouse(CreateWarehouseRequest request, CancellationToken cancellationToken = default)
         {
             var warehouse = new Warehouse(
                 name: request.Name,
@@ -52,8 +52,8 @@ namespace Inventory.API.Controllers
                 address: request.Address
             );
 
-            await _context.Warehouses.AddAsync(warehouse);
-            await _context.SaveChangesAsync();
+            await _context.Warehouses.AddAsync(warehouse, cancellationToken);
+            await _context.SaveChangesAsync(cancellationToken);
 
             return CreatedAtAction(
                 actionName: nameof(GetWarehouseById),
@@ -63,31 +63,31 @@ namespace Inventory.API.Controllers
         }
 
         [HttpPatch("{id}/activate")]
-        public async Task<IActionResult> ActivateWarehouse(Guid id)
+        public async Task<IActionResult> ActivateWarehouse(Guid id, CancellationToken cancellationToken = default)
         {
-            var warehouse = await _context.Warehouses.FindAsync(id);
+            var warehouse = await _context.Warehouses.FirstOrDefaultAsync(w => w.Id == id, cancellationToken);
 
             if (warehouse is null)
                 return NotFound("Склад не найден");
 
             warehouse.Activate();
 
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(cancellationToken);
 
             return Ok();
         }
 
         [HttpPatch("{id}/deactivate")]
-        public async Task<IActionResult> DeactivateWarehouse(Guid id)
+        public async Task<IActionResult> DeactivateWarehouse(Guid id, CancellationToken cancellationToken = default)
         {
-            var warehouse = await _context.Warehouses.FindAsync(id);
+            var warehouse = await _context.Warehouses.FirstOrDefaultAsync(w => w.Id == id, cancellationToken);
 
             if (warehouse is null)
                 return NotFound("Склад не найден");
 
             warehouse.Deactivate();
 
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(cancellationToken);
 
             return Ok();
         }

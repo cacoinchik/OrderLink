@@ -47,10 +47,10 @@ namespace Inventory.API.Controllers
         }
 
         [HttpPost("manage")]
-        public async Task<IActionResult> ManageStock(ManageStockQuantityRequest request)
+        public async Task<IActionResult> ManageStock(ManageStockQuantityRequest request, CancellationToken cancellationToken = default)
         {
             var stock = await _context.Stocks
-                .FirstOrDefaultAsync(s => s.WarehouseId == request.WarehouseId && s.Sku == request.Sku);
+                .FirstOrDefaultAsync(s => s.WarehouseId == request.WarehouseId && s.Sku == request.Sku, cancellationToken);
 
             if (stock is null)
             {
@@ -60,14 +60,14 @@ namespace Inventory.API.Controllers
                     initialQuantity: request.Quantity
                 );
 
-                await _context.Stocks.AddAsync(stock);
+                await _context.Stocks.AddAsync(stock, cancellationToken);
             }
             else
             {
                 stock.ManageQuantity(request.Quantity);
             }
 
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(cancellationToken);
 
             return Ok(MapToDto(stock));
         }
