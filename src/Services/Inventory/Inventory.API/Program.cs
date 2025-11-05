@@ -1,3 +1,6 @@
+using Inventory.API.Kafka.Configuration;
+using Inventory.API.Kafka.Consumers;
+using Inventory.API.Kafka.Producers;
 using Inventory.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +12,12 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddDbContext<InventoryDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("InventoryDatabase")));
+
+builder.Services.Configure<KafkaSettings>(builder.Configuration.GetSection("Kafka"));
+
+builder.Services.AddSingleton<InventoryEventProducer>();
+
+builder.Services.AddHostedService<OrderEventConsumer>();
 
 var app = builder.Build();
 

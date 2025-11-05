@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Orders.API.DTOs;
+using Orders.API.Kafka.Producers;
 using Orders.Domain.Entities;
+using Orders.Domain.Events;
 using Orders.Infrastructure.Data;
 
 namespace Orders.API.Controllers
@@ -11,9 +13,11 @@ namespace Orders.API.Controllers
     public class OrdersController : ControllerBase
     {
         private readonly OrdersDbContext _context;
-        public OrdersController(OrdersDbContext context)
+        private readonly OrderEventProducer _producer;
+        public OrdersController(OrdersDbContext context, OrderEventProducer producer)
         {
             _context = context;
+            _producer = producer;
         }
 
         [HttpGet("{id}")]
@@ -53,6 +57,17 @@ namespace Orders.API.Controllers
 
                 await _context.Orders.AddAsync(order, cancellationToken);
                 await _context.SaveChangesAsync(cancellationToken);
+
+                var orderCreatedEvent = new OrderCreated
+                {
+                    Id = order.Id,
+                    CustomerId = order.CustomerId,
+                    TotalAmount = order.TotalAmount,
+                    Currency = order.Currency,
+                    TimeCreate = order.TimeCreate
+                };
+
+                await _producer.PublishOrderCreatedAsync(orderCreatedEvent, cancellationToken);
 
                 var result = MapToDto(order);
 
