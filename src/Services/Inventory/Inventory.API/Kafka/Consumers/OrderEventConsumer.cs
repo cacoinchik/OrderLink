@@ -33,11 +33,20 @@ namespace Inventory.API.Kafka.Consumers
 
             try
             {
-                var consumeResult = _consumer.Consume(TimeSpan.FromSeconds(1));
-
-                if(consumeResult is not null)
+                while (!stoppingToken.IsCancellationRequested)
                 {
-                    await HandleMessageAsync(consumeResult, stoppingToken);
+                    try
+                    {
+                        var consumeResult = _consumer.Consume(TimeSpan.FromSeconds(1));
+
+                        if (consumeResult is not null)
+                        {
+                            await HandleMessageAsync(consumeResult, stoppingToken);
+                            _consumer.Commit(consumeResult);
+                        }
+                    }
+                    catch (Exception ex) { }
+
                 }
             }
             finally
