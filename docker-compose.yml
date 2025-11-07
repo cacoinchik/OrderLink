@@ -205,6 +205,8 @@ services:
       # Kafka
       Kafka__BootstrapServers: "kafka:9093"
       Kafka__GroupId: "orders-api-group"
+      Kafka__Topics__OrderEvents: "order.events"
+      Kafka__Topics__InventoryEvents: "inventory.events"
       
       # Redis
       Redis__ConnectionString: "redis:6379,password=redispass"
@@ -250,6 +252,8 @@ services:
       # Kafka
       Kafka__BootstrapServers: "kafka:9093"
       Kafka__GroupId: "inventory-api-group"
+      Kafka__Topics__OrderEvents: "order.events"
+      Kafka__Topics__InventoryEvents: "inventory.events"
       
       # Redis
       Redis__ConnectionString: "redis:6379,password=redispass"
