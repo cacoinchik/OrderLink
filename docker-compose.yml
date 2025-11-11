@@ -172,7 +172,7 @@ services:
       kafka:
         condition: service_healthy
     ports:
-      - "8080:8080"
+      - "9000:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: orderlink-local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9093
