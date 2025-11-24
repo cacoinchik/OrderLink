@@ -1,4 +1,5 @@
-﻿using Inventory.API.DTOs;
+﻿using FluentValidation;
+using Inventory.API.DTOs;
 using Inventory.Domain.Entities;
 using Inventory.Domain.Enums;
 using Inventory.Infrastructure.Data;
@@ -30,8 +31,26 @@ namespace Inventory.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateReservation(CreateReservationRequest request, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> CreateReservation(
+            CreateReservationRequest request,
+            [FromServices] IValidator<CreateReservationRequest> validator,
+            CancellationToken cancellationToken = default)
         {
+            var validationResult = await validator.ValidateAsync(request, cancellationToken);
+
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new
+                {
+                    message = "Ошибка валидации",
+                    errors = validationResult.Errors.Select(error => new
+                    {
+                        field = error.PropertyName,
+                        errorMessage = error.ErrorMessage
+                    })
+                });
+            }
+
             await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
 
             try

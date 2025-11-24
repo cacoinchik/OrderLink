@@ -1,3 +1,4 @@
+using FluentValidation;
 using Inventory.API.Kafka.Configuration;
 using Inventory.API.Kafka.Consumers;
 using Inventory.API.Kafka.Producers;
@@ -7,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

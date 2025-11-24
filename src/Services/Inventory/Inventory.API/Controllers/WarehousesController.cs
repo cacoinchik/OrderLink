@@ -1,4 +1,6 @@
-﻿using Inventory.API.DTOs;
+﻿using FluentValidation;
+using Inventory.API.DTOs;
+using Inventory.API.Validators;
 using Inventory.Domain.Entities;
 using Inventory.Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
@@ -43,8 +45,26 @@ namespace Inventory.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateWarehouse(CreateWarehouseRequest request, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> CreateWarehouse(
+            CreateWarehouseRequest request,
+            [FromServices] IValidator<CreateWarehouseRequest> validator,
+            CancellationToken cancellationToken = default)
         {
+            var validationResult = await validator.ValidateAsync(request, cancellationToken);
+
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new
+                {
+                    message = "Ошибка валидации",
+                    errors = validationResult.Errors.Select(error => new
+                    {
+                        field = error.PropertyName,
+                        errorMessage = error.ErrorMessage
+                    })
+                });
+            }
+
             var warehouse = new Warehouse(
                 name: request.Name,
                 region: request.Region,
