@@ -17,6 +17,8 @@ volumes:
     driver: local
   zookeeper_data:            # Данные Zookeeper
     driver: local
+  pgadmin_data:              # Данные pgAdmin
+    driver: local
 
 # ============================================
 # NETWORKS - Изолированная сеть для сервисов
@@ -79,6 +81,27 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+
+  # ------------------------------------------
+  # pgAdmin - GUI для PostgreSQL
+  # ------------------------------------------
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: orderlink-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - orderlink-network
+    depends_on:
+      - postgres-orders
+      - postgres-inventory
 
   # ------------------------------------------
   # Redis - Кэш и сессии
@@ -279,6 +302,7 @@ services:
 # ============================================
 # PostgreSQL Orders:    5432
 # PostgreSQL Inventory: 5433
+# pgAdmin:              5050
 # Redis:                6379
 # Zookeeper:           2181
 # Kafka:               9092 (external), 9093 (internal)

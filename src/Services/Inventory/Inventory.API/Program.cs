@@ -21,6 +21,22 @@ builder.Services.AddHostedService<OrderEventConsumer>();
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<InventoryDbContext>();
+
+    try
+    {
+        app.Logger.LogInformation("Начала миграции");
+        dbContext.Database.Migrate();
+        app.Logger.LogInformation("Миграции применены успешно");
+    }
+    catch (Exception ex)
+    {
+        app.Logger.LogError(ex, "Ошибка применения миграции");
+    }
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
