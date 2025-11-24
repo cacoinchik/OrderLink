@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using FluentValidation;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Orders.API.DTOs;
 using Orders.API.Kafka.Producers;
@@ -35,8 +36,25 @@ namespace Orders.API.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateOrderRequest(CreateOrderRequest request, CancellationToken cancellationToken = default)
+        public async Task<IActionResult> CreateOrderRequest(CreateOrderRequest request, 
+            [FromServices] IValidator<CreateOrderRequest> validator, 
+            CancellationToken cancellationToken = default)
         {
+            var validationResult = await validator.ValidateAsync(request, cancellationToken);
+
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(new
+                {
+                    message = "Ошибка валидации",
+                    errors = validationResult.Errors.Select(error => new
+                    {
+                        field = error.PropertyName,
+                        errorMessage = error.ErrorMessage
+                    })
+                });
+            }
+
             try
             {
                 var orderItems = request.Items.Select(item => new OrderItem(
