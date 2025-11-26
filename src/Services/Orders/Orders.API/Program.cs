@@ -3,12 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using Orders.API.Kafka.Configuration;
 using Orders.API.Kafka.Consumers;
 using Orders.API.Kafka.Producers;
+using Orders.API.Middleware;
 using Orders.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+builder.Services.AddProblemDetails();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -44,6 +46,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.UseHttpsRedirection();
 

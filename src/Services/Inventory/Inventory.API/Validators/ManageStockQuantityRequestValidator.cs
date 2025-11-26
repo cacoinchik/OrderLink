@@ -19,7 +19,7 @@ namespace Inventory.API.Validators
 
             RuleFor(request => request.Quantity)
                 .GreaterThanOrEqualTo(-100000).WithMessage("Количество не можеть быть меньше -100000")
-                .LessThanOrEqualTo(100000).WithMessage("Количество не можеть быть больше 100000")
+                .LessThanOrEqualTo(100000).WithMessage("Количество не может быть больше 100000")
                 .NotEqual(0).WithMessage("Нельзя менять количество на 0");
 
         }

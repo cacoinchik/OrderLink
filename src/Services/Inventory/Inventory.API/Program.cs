@@ -2,6 +2,7 @@ using FluentValidation;
 using Inventory.API.Kafka.Configuration;
 using Inventory.API.Kafka.Consumers;
 using Inventory.API.Kafka.Producers;
+using Inventory.API.Middleware;
 using Inventory.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,6 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+builder.Services.AddProblemDetails();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -44,6 +46,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.UseHttpsRedirection();
 

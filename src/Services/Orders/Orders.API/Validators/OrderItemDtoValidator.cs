@@ -8,7 +8,8 @@ namespace Orders.API.Validators
         public OrderItemDtoValidator()
         {
             RuleFor(item => item.Sku)
-                .NotNull().NotEmpty().WithMessage("SKU не может быть пустым")
+                .NotNull().WithMessage("SKU не может быть пустым")
+                .NotEmpty().WithMessage("SKU не может быть пустым")
                 .MaximumLength(100).WithMessage("Максимальная длина SKU 100 символов");
 
             RuleFor(item => item.Count)
@@ -19,6 +20,7 @@ namespace Orders.API.Validators
                 .GreaterThan(0).WithMessage("Цена должна быть больше 0");
 
             RuleFor(item => item.Currency)
+                .NotNull().WithMessage("Валюта обязательна")
                 .NotEmpty().WithMessage("Валюта обязательна")
                 .Length(3).WithMessage("Код валюты должен состоять из 3 символов")
                 .Must(BeValidCurrency).WithMessage("Валюта должна быть одной из: RUB, EUR, USD");

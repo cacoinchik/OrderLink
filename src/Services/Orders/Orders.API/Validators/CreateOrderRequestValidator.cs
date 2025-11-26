@@ -8,8 +8,9 @@ namespace Orders.API.Validators
         public CreateOrderRequestValidator()
         {
             RuleFor(request => request.CustomerId)
-                .NotNull().NotEmpty()
-                .WithMessage("ID клиента обязателен");
+                .NotNull().WithMessage("ID клиента обязателен")
+                .NotEmpty().WithMessage("ID клиента обязателен")
+                .MaximumLength(100).WithMessage("ID клиента не может быть длиннее 100 символов");
 
             RuleFor(request => request.Items)
                 .NotNull().WithMessage("Список товаров не может быть пуст")
